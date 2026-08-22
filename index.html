@@ -443,7 +443,7 @@ async function callGroq(note) {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'llama-3.1-8b-instant',
+      model: 'llama-3.3-70b-versatile',
       messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: note }],
       max_tokens: 200, temperature: 0.1
     })
