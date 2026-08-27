@@ -193,6 +193,7 @@
     <div id="login-error"></div>
     <button type="submit" class="btn-primary" id="login-submit">Entrar →</button>
   </form>
+  <button type="button" class="btn-link" id="toggle-signup" style="margin-top:8px">¿Sos otra persona? Creá tu propia cuenta</button>
 </div>
 
 <div id="app" class="hidden">
@@ -330,16 +331,45 @@ async function api(path, opts = {}) {
 
 // ---------- login ----------
 
+let loginNeedsSetup = false;
+let signupMode = false;
+
 function showLogin(needsSetup) {
+  loginNeedsSetup = needsSetup;
+  signupMode = false;
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('app').classList.add('hidden');
   document.getElementById('nav').classList.add('hidden');
-  document.getElementById('login-title').textContent = needsSetup ? 'Elegí una contraseña' : 'Gastos';
-  document.getElementById('login-subtitle').textContent = needsSetup
-    ? 'Vas a usarla para proteger tus gastos.'
-    : 'Ingresá tu contraseña.';
-  document.getElementById('login-submit').textContent = needsSetup ? 'Crear contraseña →' : 'Entrar →';
+  renderLoginMode();
 }
+
+function renderLoginMode() {
+  const toggleBtn = document.getElementById('toggle-signup');
+  if (loginNeedsSetup) {
+    document.getElementById('login-title').textContent = 'Elegí una contraseña';
+    document.getElementById('login-subtitle').textContent = 'Vas a usarla para proteger tus gastos.';
+    document.getElementById('login-submit').textContent = 'Crear contraseña →';
+    toggleBtn.classList.add('hidden');
+  } else if (signupMode) {
+    document.getElementById('login-title').textContent = 'Creá tu cuenta';
+    document.getElementById('login-subtitle').textContent = 'Elegí una contraseña propia. Tus gastos van a estar separados de los de los demás.';
+    document.getElementById('login-submit').textContent = 'Crear cuenta →';
+    toggleBtn.textContent = '¿Ya tenés cuenta? Iniciá sesión';
+    toggleBtn.classList.remove('hidden');
+  } else {
+    document.getElementById('login-title').textContent = 'Gastos';
+    document.getElementById('login-subtitle').textContent = 'Ingresá tu contraseña.';
+    document.getElementById('login-submit').textContent = 'Entrar →';
+    toggleBtn.textContent = '¿Sos otra persona? Creá tu propia cuenta';
+    toggleBtn.classList.remove('hidden');
+  }
+  document.getElementById('login-error').textContent = '';
+}
+
+document.getElementById('toggle-signup').addEventListener('click', () => {
+  signupMode = !signupMode;
+  renderLoginMode();
+});
 
 function showApp() {
   document.getElementById('login-screen').classList.add('hidden');
@@ -365,8 +395,9 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
   const password = document.getElementById('login-password').value;
   const errEl = document.getElementById('login-error');
   errEl.textContent = '';
+  const endpoint = (!loginNeedsSetup && signupMode) ? '/api/signup' : '/api/login';
   try {
-    const res = await fetch(API_BASE + '/api/login', {
+    const res = await fetch(API_BASE + endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
