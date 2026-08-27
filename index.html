@@ -224,6 +224,9 @@
       <div class="row"><span class="muted">Total del mes</span><strong id="summary-total"></strong></div>
       <div class="row"><span class="muted" id="summary-prev-label"></span><span id="summary-prev-total"></span></div>
     </div>
+    <div class="card" id="chart-card">
+      <div id="pie-chart-wrap" style="display:flex; justify-content:center; padding:8px 0"></div>
+    </div>
     <div class="card">
       <h3>Por categoría</h3>
       <div id="summary-categories"></div>
@@ -520,6 +523,41 @@ function shiftMonth(delta) {
   loadSummary();
 }
 
+function renderPieChart(entries, total) {
+  const wrap = document.getElementById('pie-chart-wrap');
+  if (!total || !entries.length) {
+    wrap.innerHTML = '<p class="muted">Sin gastos este mes.</p>';
+    return;
+  }
+
+  const size = 200;
+  const r = 70;
+  const cx = size / 2;
+  const cy = size / 2;
+  const circumference = 2 * Math.PI * r;
+
+  let offset = 0;
+  const segments = entries.map(([cat, amount]) => {
+    const c = CATEGORIES[cat] || CATEGORIES.otro;
+    const pct = amount / total;
+    const dash = pct * circumference;
+    const seg = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c.color}"
+      stroke-width="28" stroke-dasharray="${dash} ${circumference - dash}"
+      stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})"></circle>`;
+    offset += dash;
+    return seg;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div style="position:relative; width:${size}px; height:${size}px">
+      <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">${segments}</svg>
+      <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center">
+        <div style="font-size:12px; color:var(--muted)">Total</div>
+        <div style="font-size:18px; font-weight:700">${fmt(total)}</div>
+      </div>
+    </div>`;
+}
+
 async function loadSummary() {
   document.getElementById('summary-month-label').textContent = monthLabel(summaryMonth);
   const [data, monthExpenses] = await Promise.all([
@@ -535,6 +573,7 @@ async function loadSummary() {
 
   const catsEl = document.getElementById('summary-categories');
   const entries = Object.entries(data.by_category).sort((a, b) => b[1] - a[1]);
+  renderPieChart(entries, data.total);
   catsEl.innerHTML = entries.length ? entries.map(([cat, amount]) => {
     const c = CATEGORIES[cat] || CATEGORIES.otro;
     const budget = data.budgets[cat];
